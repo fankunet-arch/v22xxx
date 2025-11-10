@@ -47,5 +47,3 @@ try {
     error_log("KDS Database connection failed: " . $e->getMessage());
     throw new \PDOException($e->getMessage(), (int)$e->getCode());
 }
-
-}
