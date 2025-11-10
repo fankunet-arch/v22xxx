@@ -1,25 +1,35 @@
 <?php
 /**
- * TopTea POS - Core Configuration
- * This file contains sensitive information and is stored outside the web root.
- * Engineer: Gemini | Date: 2025-10-29 | Revision: 2.1 (Enable File Logging)
- *
- * [A1 UTC SYNC]: Added $pdo->exec("SET time_zone='+00:00'")
+ * Toptea POS - Core Configuration File
+ * Engineer: Gemini | Date: 2025-10-24
+ * Revision: 3.0 (Sync with HQ Error Logging)
  */
 
-// --- Database Configuration (Same as all other systems) ---
+// --- [SECURITY FIX V2.0] ---
+ini_set('display_errors', '0'); // Turn off displaying errors in production
+ini_set('display_startup_errors', '0');
+ini_set('log_errors', '1'); // Enable logging errors
+ini_set('error_log', __DIR__ . '/php_errors_pos.log'); // Log errors to this file
+// --- [END FIX] ---
+
+error_reporting(E_ALL);
+mb_internal_encoding('UTF-8');
+
+// --- Database Configuration (Copied from HQ) ---
 $db_host = 'mhdlmskvtmwsnt5z.mysql.db';
 $db_name = 'mhdlmskvtmwsnt5z';
 $db_user = 'mhdlmskvtmwsnt5z';
 $db_pass = 'p8PQF7M8ZKLVxtjvatMkrthFQQUB9';
 $db_char = 'utf8mb4';
 
-// --- Error Reporting ---
-ini_set('display_errors', '0'); // Turn off displaying errors in production
-ini_set('display_startup_errors', '0'); // Turn off displaying startup errors
-ini_set('log_errors', '1'); // Enable error logging to file
-ini_set('error_log', '/web_toptea/logs/php_errors_pos.log'); // Specify log file path (Adjust path if needed)
-error_reporting(E_ALL); // Report all errors
+// --- Application Settings ---
+define('POS_BASE_URL', '/pos/'); // Relative base URL for the POS app
+
+// --- Directory Paths ---
+define('POS_ROOT_PATH', dirname(__DIR__));
+define('POS_APP_PATH', POS_ROOT_PATH . '/app');
+define('POS_CORE_PATH', POS_ROOT_PATH . '/core');
+define('POS_PUBLIC_PATH', POS_ROOT_PATH . '/html');
 
 // --- Database Connection (PDO) ---
 $dsn = "mysql:host=$db_host;dbname=$db_name;charset=$db_char";
@@ -28,26 +38,22 @@ $options = [
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
     PDO::ATTR_EMULATE_PREPARES   => false,
 ];
+
 try {
     $pdo = new PDO($dsn, $db_user, $db_pass, $options);
-    
-    // [A1 UTC SYNC] 阶段 A1：设置数据库连接时区为 UTC
+
+    // [A1 UTC SYNC] Set connection timezone to UTC
     $pdo->exec("SET time_zone='+00:00'");
     
 } catch (\PDOException $e) {
-    // Log the error instead of echoing
-    error_log("Database connection failed: " . $e->getMessage());
-    http_response_code(503);
-    echo json_encode(['status' => 'error', 'message' => 'Database connection failed.']);
+    error_log("POS Database connection failed: " . $e->getMessage());
+    // For POS, we must die cleanly in a way the frontend can parse
+    header('Content-Type: application/json; charset=utf-8');
+    http_response_code(503); // Service Unavailable
+    echo json_encode([
+        'status' => 'error',
+        'message' => 'DB Connection Error (POS)',
+        'data' => null
+    ]);
     exit;
-}
-
-// System timezone used by POS
-if (!defined('APP_TZ')) {
-    define('APP_TZ', 'Europe/Madrid');
-}
-
-// 班次策略：force_all | force_cash | optional
-if (!defined('SHIFT_POLICY')) {
-  define('SHIFT_POLICY', 'force_all'); // ← 强制所有交易必须在班次内
 }
