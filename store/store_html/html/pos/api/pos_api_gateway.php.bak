@@ -1,0 +1,22 @@
+<?php
+/**
+ * Toptea Store - POS 统一 API 网关
+ * Version: 1.0.2
+ * Date: 2025-11-09
+ */
+
+require_once realpath(__DIR__ . '/../../../pos_backend/core/config.php');
+require_once realpath(__DIR__ . '/../../../pos_backend/helpers/pos_json_helper.php');
+require_once realpath(__DIR__ . '/../../../pos_backend/core/pos_api_core.php');
+
+// 载入扩展注册表（本轮只启用 PASS 扩展；主注册表等我们下个包修复后合并）
+$registry_ext_pass = require __DIR__ . '/registries/pos_registry_ext_pass.php';
+
+// 如果你的主注册表（pos_registry.php）已正确无误，可在此合并：
+// $registry_main = require __DIR__ . '/registries/pos_registry.php';
+// $full_registry = array_merge($registry_main, $registry_ext_pass);
+
+// 当前先只开放 PASS 能力，避免主注册表中断（等下一包修复 pos_registry.php 后再合并）
+$full_registry = $registry_ext_pass;
+
+run_api($full_registry, $pdo);
